@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { styles } from '../lib/headline-options.js'
 import './App.css'
 
-const styles = ['Любой стиль', 'Интригующий', 'Экспертный', 'Дружелюбный', 'Провокационный']
 
 function SparkleIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.8 7.2L21 11l-7.2 1.8L12 20l-1.8-7.2L3 11l7.2-1.8L12 2Z" /><path d="m19 15 .9 3.1L23 19l-3.1.9L19 23l-.9-3.1L15 19l3.1-.9L19 15Z" /></svg>
@@ -16,9 +16,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const canGenerate = topic.trim().length >= 2 && !isLoading
+
   async function generate(event) {
     event?.preventDefault()
-    if (!topic.trim() || isLoading) return
+    if (!canGenerate) return
     setIsLoading(true)
     setError('')
 
@@ -88,7 +90,7 @@ function App() {
                 </select>
               </label>
             </div>
-            <button className="generate-button" type="submit" disabled={!topic.trim() || isLoading}>
+            <button className="generate-button" type="submit" disabled={!canGenerate}>
               <SparkleIcon /> <span>{isLoading ? 'Ищем идеи…' : 'Придумать заголовки'}</span> {!isLoading && <span className="button-arrow">↗</span>}
             </button>
           </div>
@@ -99,9 +101,9 @@ function App() {
       {error ? (
         <section className="error-state" role="alert">
           <span className="error-symbol">!</span><p>{error}</p>
-          <button onClick={generate} disabled={isLoading}>{isLoading ? 'Пробуем ещё…' : 'Повторить'}</button>
+          <button onClick={generate} disabled={!canGenerate}>{isLoading ? 'Пробуем ещё…' : 'Повторить'}</button>
         </section>
-      ) : headlines.length > 0 ? (
+      ) : !isLoading && headlines.length > 0 ? (
         <section className="results" aria-live="polite">
           <div className="results-heading"><div><div className="results-kicker">ВАШИ ИДЕИ</div><h2>Есть за что зацепиться<span>.</span></h2></div><span className="results-count">{headlines.length} вариантов</span></div>
           <div className="headline-list">
@@ -110,7 +112,7 @@ function App() {
               <button className={`copy-button ${copied === index ? 'is-copied' : ''}`} onClick={() => copyHeadline(headline, index)} aria-label="Скопировать заголовок">{copied === index ? 'Готово ✓' : <><span>Копировать</span><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="7" width="9" height="10" rx="2"/><path d="M12 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></>}</button>
             </article>)}
           </div>
-          <button className="again-button" onClick={generate}><SparkleIcon /> Попробовать ещё</button>
+          <button className="again-button" disabled={!canGenerate} onClick={generate}><SparkleIcon /> Попробовать ещё</button>
         </section>
       ) : isLoading ? (
         <section className="loading-state" aria-live="polite"><span className="loading-spinner" /><p>Подбираем точные слова…</p><span>Сейчас появятся свежие идеи</span></section>

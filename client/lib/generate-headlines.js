@@ -1,3 +1,6 @@
+import process from 'node:process'
+import { styles } from './headline-options.js'
+
 export async function generateHeadlines({ topic: rawTopic, count: rawCount, style: rawStyle }) {
   const topic = typeof rawTopic === 'string' ? rawTopic.trim() : ''
   const count = Number(rawCount)
@@ -9,6 +12,10 @@ export async function generateHeadlines({ topic: rawTopic, count: rawCount, styl
 
   if (![5, 8, 10].includes(count)) {
     return { status: 400, body: { error: 'Выберите 5, 8 или 10 вариантов.' } }
+  }
+
+  if (!styles.includes(style)) {
+    return { status: 400, body: { error: 'Выберите стиль из списка.' } }
   }
 
   const accountId = process.env.CF_ACCOUNT_ID
@@ -65,14 +72,14 @@ export async function generateHeadlines({ topic: rawTopic, count: rawCount, styl
     const headlines = outputText
       .split('\n')
       .map((line) => line.replace(/^\s*(?:\d+[.)]|[-•])\s*/, '').replace(/^['"«»]+|['"«»]+$/g, '').trim())
-      .filter(Boolean)
-      .slice(0, count)
+      .filter((line) => line && line.split(/\s+/).length <= 10)
+    const uniqueHeadlines = [...new Set(headlines)].slice(0, count)
 
-    if (headlines.length === 0) {
-      return { status: 502, body: { error: 'ИИ вернул пустой ответ. Попробуйте изменить тему.' } }
+    if (uniqueHeadlines.length < count) {
+      return { status: 502, body: { error: 'ИИ вернул недостаточно разных коротких заголовков. Попробуйте ещё раз.' } }
     }
 
-    return { status: 200, body: { headlines } }
+    return { status: 200, body: { headlines: uniqueHeadlines } }
   } catch (error) {
     console.error('Headline generation failed:', error.message)
     const message = error.name === 'TimeoutError'
